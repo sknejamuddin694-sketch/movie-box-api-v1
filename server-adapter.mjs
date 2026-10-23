@@ -1,6 +1,6 @@
 import http from "node:http";
 import { Readable } from "node:stream";
-import worker from "/opt/moviebox-api-v4/src/index.js";
+import worker from "./src/index.js";
 
 const port = Number(process.env.PORT || 8787);
 const server = http.createServer(async (req, res) => {

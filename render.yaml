@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: movie-box-api-v1
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
