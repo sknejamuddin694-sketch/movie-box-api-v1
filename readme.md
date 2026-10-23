@@ -151,3 +151,26 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 <p align="center">
   Made by mdtahseen7 for the Streaming Community
 </p>
+
+
+## VPS Node Adapter
+
+This repository includes `server-adapter.mjs`, which runs the Cloudflare Worker `fetch()` handler on a standard Node.js VPS. It is useful when Wrangler local emulation does not serve requests correctly.
+
+Start it with:
+
+```bash
+PORT=8787 node server-adapter.mjs
+```
+
+The VPS service template is in `deploy/moviebox-api-v1.service`.
+
+### Streaming and downloads
+
+```text
+GET /api/stream/{subject_id}?detail_path={slug}&se={season}&ep={episode}
+GET /watch/{subject_id}?detail_path={slug}&se={season}&ep={episode}&resolution=480
+GET /download/{subject_id}?detail_path={slug}&se={season}&ep={episode}&resolution=480
+```
+
+The stream response includes `size_bytes` and human-readable `size_mb` for each available quality. The download route uses `Content-Disposition: attachment` while preserving range support through the proxy.

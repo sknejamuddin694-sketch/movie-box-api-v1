@@ -1,3 +1,5 @@
 node_modules/
 .wrangler/
-stream-proxy/
+*.log
+tmp_detail.json
+*.vps-backup-*

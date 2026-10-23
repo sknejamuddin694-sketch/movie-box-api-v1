@@ -1,0 +1,16 @@
+[Unit]
+Description=MovieBox API v1 Node adapter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/moviebox-api-v4
+Environment=NODE_ENV=production
+Environment=PORT=8787
+ExecStart=/usr/bin/node /opt/moviebox-api-v4/server-adapter.mjs
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

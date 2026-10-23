@@ -11,6 +11,31 @@ const H5_API = "https://h5-api.aoneroom.com";
 const DEFAULT_DOMAIN = "https://123movienow.cc";
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 
+async function movieBoxHeaders(keyword) {
+  const base = {
+    "User-Agent": UA,
+    "X-Source": "downloader",
+    "X-Site-Domain": "videodownloader.site",
+    "Origin": "https://videodownloader.site",
+  };
+  const bootstrap = await fetch(`${H5_API}/wefeed-h5api-bff/subject/search-suggest`, {
+    method: "POST",
+    headers: { ...base, "Content-Type": "application/json" },
+    body: JSON.stringify({ keyword, perPage: 1 }),
+  });
+  const rawUser = bootstrap.headers.get("x-user");
+  if (rawUser) {
+    try {
+      const token = JSON.parse(rawUser).token;
+      if (token) {
+        base.Authorization = `Bearer ${token}`;
+        base.Cookie = `token=${token}`;
+      }
+    } catch {}
+  }
+  return base;
+}
+
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
@@ -89,6 +114,9 @@ export default {
       // ── Streaming ─────────────────────────────────────────
       m = p.match(/^\/api\/stream\/(\d+)$/);
       if (m) return handleStreamApi(m[1], url.searchParams);
+
+      m = p.match(/^\/download\/(\d+)$/);
+      if (m) return handleWatch(m[1], url.searchParams, request, true);
 
       m = p.match(/^\/watch\/(\d+)$/);
       if (m) return handleWatch(m[1], url.searchParams, request);
@@ -456,7 +484,7 @@ async function handleSearchSuggest(params) {
     `${H5_API}/wefeed-h5api-bff/subject/search-suggest`,
     {
       method: "POST",
-      headers: { "User-Agent": UA, "Content-Type": "application/json" },
+      headers: { ...(await movieBoxHeaders(q)), "Content-Type": "application/json" },
       body: JSON.stringify({ keyword: q, perPage: 10 }),
     }
   );
@@ -477,7 +505,7 @@ async function handleSearch(params) {
     `${H5_API}/wefeed-h5api-bff/subject/search`,
     {
       method: "POST",
-      headers: { "User-Agent": UA, "Content-Type": "application/json" },
+      headers: { ...(await movieBoxHeaders(q)), "Content-Type": "application/json" },
       body: JSON.stringify({ keyword: q, perPage: 30, page: 1 }),
     }
   );
@@ -709,6 +737,7 @@ async function handleStreamApi(subjectId, params) {
       format: s.format || null,
       url: s.url,
       size_bytes: s.size || null,
+      size_mb: s.size ? Number((Number(s.size) / 1048576).toFixed(2)) : null,
       id: s.id || null,
     }))
     .sort((a, b) => {
@@ -764,7 +793,7 @@ async function handleStreamApi(subjectId, params) {
 // GET /watch/{subject_id}  — zero-buffer video streaming
 // ══════════════════════════════════════════════════════════════════
 
-async function handleWatch(subjectId, params, request) {
+async function handleWatch(subjectId, params, request, download = false) {
   const detailPath = params.get("detail_path");
   if (!detailPath) return json({ error: "detail_path is required" }, 400);
   const se = params.get("se") || "0";
@@ -824,6 +853,10 @@ async function handleWatch(subjectId, params, request) {
   );
   respHeaders.set("X-Stream-Resolution", `${stream.resolutions}p`);
   respHeaders.set("Cache-Control", "no-store");
+  if (download) {
+    const safeName = `${detailPath}-s${se}e${ep}-${stream.resolutions}p.mp4`.replace(/[^a-zA-Z0-9._-]/g, "_");
+    respHeaders.set("Content-Disposition", `attachment; filename="${safeName}"`);
+  }
 
   const cl = vidResp.headers.get("Content-Length");
   if (cl) respHeaders.set("Content-Length", cl);
